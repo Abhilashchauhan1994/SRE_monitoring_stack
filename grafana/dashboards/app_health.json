@@ -1,0 +1,130 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {},
+      "targets": [
+        {
+          "expr": "process_cpu_user_seconds_total",
+          "legendFormat": "CPU User Seconds",
+          "refId": "A"
+        },
+        {
+          "expr": "process_cpu_system_seconds_total",
+          "legendFormat": "CPU System Seconds",
+          "refId": "B"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "graph"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "options": {},
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes",
+          "legendFormat": "Resident Memory (bytes)",
+          "refId": "A"
+        },
+        {
+          "expr": "process_virtual_memory_bytes",
+          "legendFormat": "Virtual Memory (bytes)",
+          "refId": "B"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "graph"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "options": {
+        "showHeader": true
+      },
+      "targets": [
+        {
+          "expr": "sum by (code) (rate(http_requests_total[1m]))",
+          "legendFormat": "{{code}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Requests by Status Code",
+      "type": "barchart"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "options": {},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{code=~\"4..|5..\"}[1m])) / sum(rate(http_requests_total[1m]))",
+          "legendFormat": "Error Rate",
+          "refId": "A"
+        }
+      ],
+      "title": "Error Rate",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 14 },
+      "id": 5,
+      "options": {},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, path))",
+          "legendFormat": "95th percentile latency",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket[1m])) by (le, path))",
+          "legendFormat": "50th percentile latency",
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP Request Latency (s)",
+      "type": "graph"
+    }
+  ],
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["App Health", "SRE"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "App Health Dashboard",
+  "uid": null,
+  "version": 1
+}
+

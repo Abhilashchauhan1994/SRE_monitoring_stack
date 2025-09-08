@@ -1,0 +1,13 @@
+groups:
+  - name: test-alerts
+    rules:
+      - alert: InstanceDown
+        expr: rate(http_request_errors_total{code="500"}[1m])>0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Instance {{ $labels.instance }} down"
+          description: "{{ $labels.instance }} has been down for 30s"
+
+  

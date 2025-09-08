@@ -1,0 +1,42 @@
+{
+  "uid": "system-health",
+  "title": "System Health",
+  "schemaVersion": 30,
+  "version": 1,
+  "panels": [
+    {
+      "type": "graph",
+      "title": "CPU Usage",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "100 - (avg by(instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Memory Usage",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "Filesystem Usage",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "targets": [
+        {
+          "expr": "node_filesystem_size_bytes - node_filesystem_free_bytes",
+          "legendFormat": "{{instance}} - {{mountpoint}}"
+        }
+      ]
+    }
+  ]
+}
+

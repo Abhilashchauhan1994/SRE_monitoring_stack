@@ -1,0 +1,27 @@
+{
+  "title": "SLO Overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat", "title": "Availability (5m)",
+      "targets": [{"expr": "avg(job:http_availability:5m)"}]
+    },
+    {
+      "type": "stat", "title": "P95 Latency (s)",
+      "targets": [{"expr": "avg(job:http_latency_p95:5m)"}]
+    },
+    {
+      "type": "graph", "title": "Error Ratio (5m)",
+      "targets": [{"expr": "avg(job:http_error_ratio:5m)"}]
+    },
+    {
+      "type": "graph", "title": "Burn Rate (5m)",
+      "targets": [{"expr": "avg(slo:burn_rate:5m)"}]
+    },
+    {
+      "type": "graph", "title": "Requests per second",
+      "targets": [{"expr": "sum(rate(http_requests_total[5m]))"}]
+    }
+  ]
+}

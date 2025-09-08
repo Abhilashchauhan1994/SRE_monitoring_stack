@@ -1,0 +1,101 @@
+groups:
+- name: slis
+  interval: 30s
+  rules:
+  # --- SLI primitives ---
+  - record: job:http_requests:rate5m
+    expr: sum by (path) (rate(http_requests_total[5m]))
+
+  - record: job:http_errors:rate5m
+    expr: sum by (path) (rate(http_request_errors_total[5m]))
+
+  - record: job:http_latency_bucket:rate5m
+    expr: sum by (le, path) (rate(http_request_duration_seconds_bucket[5m]))
+
+  # P95 latency SLI per path
+  - record: job:http_latency_p95:5m
+    expr: |
+      histogram_quantile(0.95,
+        sum by (le, path) (rate(http_request_duration_seconds_bucket[5m]))
+      )
+
+  # Error ratio (errors/total)
+  - record: job:http_error_ratio:5m
+    expr: |
+      (sum by (path) (rate(http_request_errors_total[5m])))
+      /
+      (sum by (path) (rate(http_requests_total[5m])))
+
+  # Availability SLI = 1 - error_ratio
+  - record: job:http_availability:5m
+    expr: 1 - job:http_error_ratio:5m
+
+- name: slo
+  interval: 1m
+  rules:
+  # --- Targets (tweak here) ---
+  - record: slo:availability_target
+    expr: 0.999
+  - record: slo:latency_threshold_seconds
+    expr: 0.3  # 300 ms
+
+  # Requests under latency threshold
+  - record: job:http_requests_fast:rate5m
+    expr: |
+      sum by (path) (
+        rate(http_request_duration_seconds_bucket{le="0.3"}[5m])
+      )
+
+  - record: job:http_latency_compliance:5m
+    expr: |
+      job:http_requests_fast:rate5m
+      /
+      (sum by (path) (rate(http_request_duration_seconds_count[5m])))
+
+  # Error budget burn rate (multi-window) for availability 99.9%
+  # burn_rate = error_ratio / (1 - SLO)
+  - record: slo:burn_rate:5m
+    expr: job:http_error_ratio:5m / (1 - slo:availability_target)
+  - record: slo:burn_rate:1h
+    expr: (
+      sum by (path) (rate(http_request_errors_total[1h])))
+      /
+      (sum by (path) (rate(http_requests_total[1h])))
+      / (1 - slo:availability_target)
+
+- name: alerts
+  interval: 30s
+  rules:
+  # Fast-burn: page if consuming ~10% budget/hour (approx factor 14.4 for 99.9% over 30d)
+  - alert: SLOAvailabilityFastBurn
+    expr: slo:burn_rate:5m > 14.4
+    for: 5m
+    labels:
+      severity: page
+    annotations:
+      summary: "Fast burn of availability error budget on {{ $labels.path }}"
+      description: |
+        Burn rate {{ $value | printf "%.2f" }} > 6 over 1h (99.9% SLO).
+        Investigate root cause.
+
+  # Slow-burn: ticket if burning budget steadily (factor ~6 for 1h)
+  - alert: SLOAvailabilitySlowBurn
+    expr: slo:burn_rate:1h > 6
+    for: 1h
+    labels:
+      severity: ticket
+    annotations:
+      summary: "Slow burn of availability error budget on {{ $labels.path }}"
+      description: |
+        Burn rate {{ $value | printf "%.2f" }} > 6 over 1h (99.9% SLO).
+        Investigate root cause.
+  # Latency SLO breach (P95 > 300ms for 15m)
+  - alert: SLOLatencyThresholdExceeded
+    expr: job:http_latency_p95:5m > slo:latency_threshold_seconds
+    for: 15m
+    labels:
+      severity: ticket
+    annotations:
+      summary: "P95 latency SLO violated on {{ $labels.path }}"
+      description: |
+       "P95 latency {{ $value | printf "%.3f" }}s exceeds 0.3s for 15m."
